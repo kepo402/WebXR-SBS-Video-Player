@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SBS Video Player with WebXR and Three.js</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #container { width: 100%; height: 100vh; position: relative; }
+        #vrButton { position: absolute; bottom: 10px; right: 10px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <video id="video" loop crossOrigin="anonymous" playsinline controls style="width: 100%; height: auto;">
+            <source src="dirtbike.mp4" type="video/mp4">
+        </video>
+        <button id="vrButton">Enter VR</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.140.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.140.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+        let camera, scene, renderer, videoTexture, videoMeshLeft, videoMeshRight;
+        let vrMode = false;
+
+        const container = document.getElementById('container');
+        const video = document.getElementById('video');
+        const vrButton = document.getElementById('vrButton');
+
+        vrButton.addEventListener('click', () => {
+            if (vrMode) {
+                exitVR();
+            } else {
+                enterVR();
+            }
+        });
+
+        function enterVR() {
+            video.pause();
+            video.src = "dirtbike_sbs.mp4";
+            video.play();
+
+            initVR();
+            vrButton.textContent = "Exit VR";
+            vrMode = true;
+        }
+
+        function exitVR() {
+            renderer.setAnimationLoop(null);
+            video.pause();
+            video.src = "dirtbike.mp4";
+            video.play();
+
+            vrButton.textContent = "Enter VR";
+            vrMode = false;
+
+            // Clean up the VR elements
+            if (renderer && renderer.domElement) {
+                document.body.removeChild(renderer.domElement);
+            }
+        }
+
+        function initVR() {
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 0, 1); // Ensure camera is in front of the video plane
+
+            scene = new THREE.Scene();
+
+            videoTexture = new THREE.VideoTexture(video);
+            videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+            const geometry = new THREE.PlaneGeometry(1, 1);
+
+            // Left eye material
+            const materialLeft = new THREE.MeshBasicMaterial({ map: videoTexture.clone(), side: THREE.DoubleSide });
+            materialLeft.map.repeat.set(0.5, 1); // Show the left half of the video
+            materialLeft.map.offset.set(0, 0);
+
+            // Right eye material
+            const materialRight = new THREE.MeshBasicMaterial({ map: videoTexture.clone(), side: THREE.DoubleSide });
+            materialRight.map.repeat.set(0.5, 1); // Show the right half of the video
+            materialRight.map.offset.set(0.5, 0);
+
+            // Left eye mesh
+            videoMeshLeft = new THREE.Mesh(geometry, materialLeft);
+            videoMeshLeft.scale.set(1.2, 1, 1); // Adjust scale to match video aspect ratio
+            videoMeshLeft.position.x = -0.6;
+            videoMeshLeft.layers.set(1);
+            scene.add(videoMeshLeft);
+
+            // Right eye mesh
+            videoMeshRight = new THREE.Mesh(geometry, materialRight);
+            videoMeshRight.scale.set(1.2, 1, 1); // Adjust scale to match video aspect ratio
+            videoMeshRight.position.x = 0.6;
+            videoMeshRight.layers.set(2);
+            scene.add(videoMeshRight);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            renderer.xr.setReferenceSpaceType('local');
+            container.appendChild(renderer.domElement);
+
+            document.body.appendChild(VRButton.createButton(renderer));
+
+            window.addEventListener('resize', onWindowResize);
+
+            renderer.setAnimationLoop(render);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function render() {
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
