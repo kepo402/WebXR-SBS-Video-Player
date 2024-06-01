@@ -12,7 +12,7 @@
 <body>
     <div id="container">
         <video id="video" loop crossOrigin="anonymous" playsinline controls style="width: 100%; height: auto;">
-            <source src="dirtbike.mp4" type="video/mp4">
+            <source src="dirtbike_sbs.mp4" type="video/mp4">
         </video>
     </div>
 
@@ -36,7 +36,7 @@
 
         function initVR() {
             video.pause();
-            video.src = "dirtbike_sbs.mp4";
+            video.src = "dirtbike.mp4";
             video.play();
 
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -47,7 +47,7 @@
             videoTexture = new THREE.VideoTexture(video);
             videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-            const geometry = new THREE.PlaneGeometry(1, 1);
+            const geometry = new THREE.PlaneGeometry(1.2, 0.675); // Adjusted for a typical 16:9 aspect ratio
 
             // Left eye material
             const materialLeft = new THREE.MeshBasicMaterial({ map: videoTexture.clone(), side: THREE.DoubleSide });
@@ -61,14 +61,12 @@
 
             // Left eye mesh
             videoMeshLeft = new THREE.Mesh(geometry, materialLeft);
-            videoMeshLeft.scale.set(1.2, 1, 1); // Adjust scale to match video aspect ratio
             videoMeshLeft.position.x = -0.6;
             videoMeshLeft.layers.set(1);
             scene.add(videoMeshLeft);
 
             // Right eye mesh
             videoMeshRight = new THREE.Mesh(geometry, materialRight);
-            videoMeshRight.scale.set(1.2, 1, 1); // Adjust scale to match video aspect ratio
             videoMeshRight.position.x = 0.6;
             videoMeshRight.layers.set(2);
             scene.add(videoMeshRight);
@@ -102,6 +100,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 
