@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="container">
-        <video id="video" loop crossOrigin="anonymous" playsinline controls style="width: 100%; height: auto;">
+        <video id="video" loop muted crossOrigin="anonymous" playsinline style="display: none;">
             <source src="dirtbike_sbs.mp4" type="video/mp4">
         </video>
     </div>
@@ -29,48 +29,30 @@
         import * as THREE from 'three';
         import { VRButton } from 'three/addons/webxr/VRButton.js';
 
-        let camera, scene, renderer, videoTexture, videoMeshLeft, videoMeshRight;
+        let camera, scene, renderer, videoTexture, videoMesh;
 
         const container = document.getElementById('container');
         const video = document.getElementById('video');
 
         function initVR() {
-            video.pause();
-            video.src = "dirtbike.mp4";
-            video.play();
-
+            // Set up the scene
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 0, 1); // Ensure camera is in front of the video plane
-
             scene = new THREE.Scene();
 
+            // Create video texture
             videoTexture = new THREE.VideoTexture(video);
             videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-            const geometry = new THREE.PlaneGeometry(1.2, 0.675); // Adjusted for a typical 16:9 aspect ratio
+            // Create plane geometry
+            const geometry = new THREE.PlaneGeometry(16, 9); // 16:9 aspect ratio
+            const material = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
 
-            // Left eye material
-            const materialLeft = new THREE.MeshBasicMaterial({ map: videoTexture.clone(), side: THREE.DoubleSide });
-            materialLeft.map.repeat.set(0.5, 1); // Show the left half of the video
-            materialLeft.map.offset.set(0, 0);
+            // Create video mesh and add to scene
+            videoMesh = new THREE.Mesh(geometry, material);
+            videoMesh.position.z = -10; // Position the video plane in front of the camera
+            scene.add(videoMesh);
 
-            // Right eye material
-            const materialRight = new THREE.MeshBasicMaterial({ map: videoTexture.clone(), side: THREE.DoubleSide });
-            materialRight.map.repeat.set(0.5, 1); // Show the right half of the video
-            materialRight.map.offset.set(0.5, 0);
-
-            // Left eye mesh
-            videoMeshLeft = new THREE.Mesh(geometry, materialLeft);
-            videoMeshLeft.position.x = -0.6;
-            videoMeshLeft.layers.set(1);
-            scene.add(videoMeshLeft);
-
-            // Right eye mesh
-            videoMeshRight = new THREE.Mesh(geometry, materialRight);
-            videoMeshRight.position.x = 0.6;
-            videoMeshRight.layers.set(2);
-            scene.add(videoMeshRight);
-
+            // Set up renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -78,11 +60,26 @@
             renderer.xr.setReferenceSpaceType('local');
             container.appendChild(renderer.domElement);
 
+            // Add VR button to the document
             document.body.appendChild(VRButton.createButton(renderer));
 
+            // Handle window resize
             window.addEventListener('resize', onWindowResize);
 
+            // Animation loop
             renderer.setAnimationLoop(render);
+
+            // Play video when it's ready
+            video.addEventListener('canplay', () => {
+                video.play().catch(error => {
+                    console.error("Video play failed: ", error);
+                });
+            });
+
+            // Attempt to play the video immediately
+            video.play().catch(error => {
+                console.error("Initial video play failed: ", error);
+            });
         }
 
         function onWindowResize() {
@@ -92,6 +89,12 @@
         }
 
         function render() {
+            // Ensure the video texture updates
+            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+                videoTexture.needsUpdate = true;
+            }
+
+            // Render the scene
             renderer.render(scene, camera);
         }
 
@@ -100,6 +103,7 @@
     </script>
 </body>
 </html>
+
 
 
 
