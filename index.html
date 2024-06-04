@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; overflow: hidden; }
-        #container { width: 100%; height: 100vh; position: relative; }
+        #container { width: 100%; height: 100vh; position: absolute; top: 0; left: 0; }
     </style>
 </head>
 <body>
@@ -43,13 +43,14 @@
             videoTexture = new THREE.VideoTexture(video);
             videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-            // Create plane geometry
-            const geometry = new THREE.PlaneGeometry(16, 9); // 16:9 aspect ratio
-            const material = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
+            // Create a sphere geometry and apply the video texture
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            geometry.scale(-1, 1, 1); // Invert the geometry on the x-axis so we see the inside of the sphere
+
+            const material = new THREE.MeshBasicMaterial({ map: videoTexture });
 
             // Create video mesh and add to scene
             videoMesh = new THREE.Mesh(geometry, material);
-            videoMesh.position.z = -10; // Position the video plane in front of the camera
             scene.add(videoMesh);
 
             // Set up renderer
@@ -103,6 +104,19 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
