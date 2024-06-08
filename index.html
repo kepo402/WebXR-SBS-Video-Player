@@ -10,12 +10,7 @@
     </style>
 </head>
 <body>
-    <div id="container">
-        <video id="video" loop muted crossOrigin="anonymous" playsinline>
-            <source src="http://localhost:8080/https://www.images.depthify.ai/demo_sbs.mp4" type="video/mp4">
-        </video>
-        
-    </div>
+    <div id="container"></div>
 
     <script type="importmap">
         {
@@ -30,51 +25,68 @@
         import * as THREE from 'three';
         import { VRButton } from 'three/addons/webxr/VRButton.js';
 
-        let camera, scene, renderer, videoTexture, videoMeshLeft, videoMeshRight;
+        let camera, scene, renderer, videoTexture, videoMesh, videoMeshLeft, videoMeshRight;
 
         const container = document.getElementById('container');
-        const video = document.getElementById('video');
 
         function initVR() {
             // Set up the scene
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
             scene = new THREE.Scene();
 
+            // Load the video
+            const video = document.createElement('video');
+            video.src = 'demo_sbs.mp4'; // Replace with the path to your local video file
+            video.crossOrigin = 'anonymous';
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.load();
+
             // Create video texture
             videoTexture = new THREE.VideoTexture(video);
-            videoTexture.colorSpace = THREE.SRGBColorSpace;
+            videoTexture.minFilter = THREE.LinearFilter;
 
-            // Create a flat plane geometry and apply the video texture for the left eye
-            const geometry = new THREE.PlaneGeometry(8, 9); // 16:9 aspect ratio for each eye (split)
+            // Create material for non-VR mode
+            const material = new THREE.MeshBasicMaterial({
+                map: videoTexture,
+                side: THREE.DoubleSide
+            });
+
+            // Create plane geometry
+            const geometry = new THREE.PlaneGeometry(16, 9); // 16:9 aspect ratio
+
+            // Create video mesh for non-VR mode
+            videoMesh = new THREE.Mesh(geometry, material);
+            scene.add(videoMesh);
+
+            // Create materials for VR mode
             const materialLeft = new THREE.MeshBasicMaterial({
-                map: videoTexture,
-                side: THREE.DoubleSide,
+                map: videoTexture.clone(), // Clone the texture for independent control
+                side: THREE.DoubleSide
             });
-            materialLeft.map.offset.x = 0;
-            materialLeft.map.repeat.x = 0.5;
+            materialLeft.map.offset.set(0, 0);  // Start at the left side of the video
+            materialLeft.map.repeat.set(0.5, 1);  // Only show the left half
 
-            // Create a flat plane geometry and apply the video texture for the right eye
             const materialRight = new THREE.MeshBasicMaterial({
-                map: videoTexture,
-                side: THREE.DoubleSide,
+                map: videoTexture.clone(), // Clone the texture for independent control
+                side: THREE.DoubleSide
             });
-            materialRight.map.offset.x = 0.5;
-            materialRight.map.repeat.x = 0.5;
+            materialRight.map.offset.set(0.5, 0);  // Start at the right side of the video
+            materialRight.map.repeat.set(0.5, 1);  // Only show the right half
 
-            // Create video meshes and add to scene
+            // Create video meshes for VR mode
             videoMeshLeft = new THREE.Mesh(geometry, materialLeft);
             videoMeshRight = new THREE.Mesh(geometry, materialRight);
-
-            // Position, scale, and orient the video meshes
-            videoMeshLeft.position.set(-4, 0, -10); // Position to the left for the left eye
-            videoMeshRight.position.set(4, 0, -10); // Position to the right for the right eye
-            videoMeshLeft.scale.set(1, 1, 1); // Adjust the scale as needed
-            videoMeshRight.scale.set(1, 1, 1); // Adjust the scale as needed
-            videoMeshLeft.rotation.set(0, Math.PI / 2, 0); // Adjust the rotation as needed
-            videoMeshRight.rotation.set(0, -Math.PI / 2, 0); // Adjust the rotation as needed
-
             scene.add(videoMeshLeft);
             scene.add(videoMeshRight);
+
+            // Position the video mesh for non-VR mode
+            videoMesh.position.set(0, 0, -20);
+
+            // Hide VR mode meshes initially
+            videoMeshLeft.visible = false;
+            videoMeshRight.visible = false;
 
             // Set up renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -94,16 +106,36 @@
             renderer.setAnimationLoop(render);
 
             // Play video when it's ready
-            video.addEventListener('canplay', () => {
-                video.play().catch(error => {
-                    console.error("Video play failed: ", error);
-                });
+            video.play().catch(error => {
+                console.error("Video play failed: ", error);
             });
 
-            // Attempt to play the video immediately
-            video.play().catch(error => {
-                console.error("Initial video play failed: ", error);
-            });
+            // Handle entering VR mode
+            renderer.xr.addEventListener('sessionstart', onSessionStart);
+
+            // Handle exiting VR mode
+            renderer.xr.addEventListener('sessionend', onSessionEnd);
+        }
+
+        function onSessionStart() {
+            // Hide non-VR video mesh
+            videoMesh.visible = false;
+
+            // Adjust and show video meshes for VR mode
+            videoMeshLeft.visible = true;
+            videoMeshRight.visible = true;
+            videoMeshLeft.position.set(-10, 0, -20);
+            videoMeshRight.position.set(10, 0, -20);
+        }
+
+        function onSessionEnd() {
+            // Show non-VR video mesh
+            videoMesh.visible = true;
+            videoMesh.position.set(0, 0, -20);
+
+            // Hide VR video meshes
+            videoMeshLeft.visible = false;
+            videoMeshRight.visible = false;
         }
 
         function onWindowResize() {
@@ -114,7 +146,7 @@
 
         function render() {
             // Ensure the video texture updates
-            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+            if (videoTexture && videoTexture.image && videoTexture.image.readyState >= videoTexture.image.HAVE_CURRENT_DATA) {
                 videoTexture.needsUpdate = true;
             }
 
@@ -127,39 +159,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
