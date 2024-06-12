@@ -48,7 +48,7 @@
             videoTexture.minFilter = THREE.LinearFilter;
 
             // Create material for non-VR mode
-            const material = new THREE.MeshBasicMaterial({
+            const normalMaterial = new THREE.MeshBasicMaterial({
                 map: videoTexture,
                 side: THREE.DoubleSide
             });
@@ -57,19 +57,19 @@
             const geometry = new THREE.PlaneGeometry(16, 9); // 16:9 aspect ratio
 
             // Create video mesh for non-VR mode
-            videoMesh = new THREE.Mesh(geometry, material);
+            videoMesh = new THREE.Mesh(geometry, normalMaterial);
             scene.add(videoMesh);
 
-            // Create materials for VR mode
+            // Create materials for VR mode with proper stereo view
             const materialLeft = new THREE.MeshBasicMaterial({
-                map: videoTexture.clone(), // Clone the texture for independent control
+                map: videoTexture.clone(), // Use a clone to manage offsets separately
                 side: THREE.DoubleSide
             });
             materialLeft.map.offset.set(0, 0);  // Start at the left side of the video
             materialLeft.map.repeat.set(0.5, 1);  // Only show the left half
 
             const materialRight = new THREE.MeshBasicMaterial({
-                map: videoTexture.clone(), // Clone the texture for independent control
+                map: videoTexture.clone(), // Use a clone to manage offsets separately
                 side: THREE.DoubleSide
             });
             materialRight.map.offset.set(0.5, 0);  // Start at the right side of the video
@@ -159,6 +159,65 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
